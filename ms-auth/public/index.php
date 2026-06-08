@@ -7,6 +7,7 @@ use Dotenv\Dotenv;
 use Logitrans\MsAuth\Config\Database;
 use Logitrans\MsAuth\Models\Usuario;
 use Logitrans\MsAuth\Controllers\AuthController;
+use Logitrans\MsAuth\Middleware\AuthMiddleware;
 
 // Cargar variables de entorno
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
@@ -46,7 +47,8 @@ $app->get('/usuarios', function ($request, $response) {
         'Content-Type',
         'application/json'
     );
-});
+
+})->add(new AuthMiddleware());
 
 $authController = new AuthController();
 
