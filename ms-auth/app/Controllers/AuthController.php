@@ -68,4 +68,41 @@ class AuthController
         return $response
             ->withHeader('Content-Type', 'application/json');
     }
+
+    public function logout($request, $response)
+{
+    $data = json_decode($request->getBody()->getContents(), true);
+
+    $token = $data['token'] ?? '';
+
+    $usuario = Usuario::where('token', $token)->first();
+
+    if (!$usuario) {
+
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'Token inválido'
+            ])
+        );
+
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(401);
+    }
+
+    $usuario->token = null;
+    $usuario->sesion_activa = false;
+    $usuario->save();
+
+    $response->getBody()->write(
+        json_encode([
+            'success' => true,
+            'mensaje' => 'Sesión cerrada correctamente'
+        ])
+    );
+
+    return $response
+        ->withHeader('Content-Type', 'application/json');
+}
 }

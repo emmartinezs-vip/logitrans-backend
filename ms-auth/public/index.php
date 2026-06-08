@@ -51,5 +51,6 @@ $app->get('/usuarios', function ($request, $response) {
 $authController = new AuthController();
 
 $app->post('/login', [$authController, 'login']);
+$app->post('/logout', [$authController, 'logout']);
 
 $app->run();
