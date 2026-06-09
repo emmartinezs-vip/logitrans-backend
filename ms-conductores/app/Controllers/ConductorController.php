@@ -27,6 +27,26 @@ class ConductorController
         true
     );
 
+    if (
+    strtotime($data['fecha_vencimiento_licencia'])
+    <= strtotime(date('Y-m-d'))
+) {
+
+    $response->getBody()->write(
+        json_encode([
+            'success' => false,
+            'mensaje' => 'La licencia se encuentra vencida'
+        ])
+    );
+
+    return $response
+        ->withHeader(
+            'Content-Type',
+            'application/json'
+        )
+        ->withStatus(400);
+}
+
     $documentoExiste = Conductor::where(
         'documento',
         $data['documento']
@@ -283,6 +303,26 @@ public function actualizar($request, $response, $args)
         $request->getBody()->getContents(),
         true
     );
+
+    if (
+    strtotime($data['fecha_vencimiento_licencia'])
+    <= strtotime(date('Y-m-d'))
+) {
+
+    $response->getBody()->write(
+        json_encode([
+            'success' => false,
+            'mensaje' => 'La licencia se encuentra vencida'
+        ])
+    );
+
+    return $response
+        ->withHeader(
+            'Content-Type',
+            'application/json'
+        )
+        ->withStatus(400);
+}
 
     $correoExiste = Conductor::where(
         'correo',
