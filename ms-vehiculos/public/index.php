@@ -49,4 +49,24 @@ $app->get(
     [$vehiculoController, 'buscarPorPlaca']
 );
 
+$app->get(
+    '/vehiculos/tipo/{tipo}',
+    [$vehiculoController, 'buscarPorTipo']
+);
+
+$app->get(
+    '/vehiculos/estado/{estado}',
+    [$vehiculoController, 'buscarPorEstado']
+);
+
+$app->patch(
+    '/vehiculos/{id}/estado',
+    [$vehiculoController, 'cambiarEstado']
+);
+
+$app->put(
+    '/vehiculos/{id}',
+    [$vehiculoController, 'actualizar']
+);
+
 $app->run();
