@@ -69,4 +69,9 @@ $app->put(
     [$vehiculoController, 'actualizar']
 );
 
+$app->get(
+    '/vehiculos/{id}',
+    [$vehiculoController, 'buscarPorId']
+);
+
 $app->run();

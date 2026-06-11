@@ -69,4 +69,9 @@ $app->put(
     [$conductorController, 'actualizar']
 );
 
+$app->get(
+    '/conductores/{id}',
+    [$conductorController, 'buscarPorId']
+);
+
 $app->run();

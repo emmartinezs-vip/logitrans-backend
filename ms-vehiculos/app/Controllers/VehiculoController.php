@@ -323,4 +323,37 @@ public function actualizar($request, $response, $args)
     );
 }
 
+public function buscarPorId($request, $response, $args)
+{
+    $vehiculo = Vehiculo::find(
+        $args['id']
+    );
+
+    if (!$vehiculo) {
+
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'Vehiculo no encontrado'
+            ])
+        );
+
+        return $response
+            ->withHeader(
+                'Content-Type',
+                'application/json'
+            )
+            ->withStatus(404);
+    }
+
+    $response->getBody()->write(
+        $vehiculo->toJson()
+    );
+
+    return $response->withHeader(
+        'Content-Type',
+        'application/json'
+    );
+}
+
 }

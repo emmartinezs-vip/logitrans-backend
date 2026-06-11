@@ -396,4 +396,37 @@ public function actualizar($request, $response, $args)
     );
 }
 
+public function buscarPorId($request, $response, $args)
+{
+    $conductor = Conductor::find(
+        $args['id']
+    );
+
+    if (!$conductor) {
+
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'Conductor no encontrado'
+            ])
+        );
+
+        return $response
+            ->withHeader(
+                'Content-Type',
+                'application/json'
+            )
+            ->withStatus(404);
+    }
+
+    $response->getBody()->write(
+        $conductor->toJson()
+    );
+
+    return $response->withHeader(
+        'Content-Type',
+        'application/json'
+    );
+}
+
 }
