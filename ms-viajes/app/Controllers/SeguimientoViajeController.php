@@ -235,25 +235,43 @@ public function finalizarViaje(
     ->orderBy('id', 'desc')
     ->first();
 
-if (!$ultimoSeguimiento) {
+    if (!$ultimoSeguimiento) {
 
-    $response->getBody()->write(
-        json_encode([
-            'success' => false,
-            'mensaje' => 'El viaje no ha sido iniciado'
-        ])
-    );
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'El viaje no ha sido iniciado'
+            ])
+        );
 
-    return $response
-        ->withHeader(
-            'Content-Type',
-            'application/json'
-        )
-        ->withStatus(400);
-}
+        return $response
+            ->withHeader(
+                'Content-Type',
+                'application/json'
+            )
+            ->withStatus(400);
+    }
 
     if (
-        $ultimoSeguimiento &&
+        $ultimoSeguimiento->estado === 'cancelado'
+    ) {
+
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'No se puede finalizar un viaje cancelado'
+            ])
+        );
+
+        return $response
+            ->withHeader(
+                'Content-Type',
+                'application/json'
+            )
+            ->withStatus(400);
+    }
+
+    if (
         $ultimoSeguimiento->estado === 'finalizado'
     ) {
 
