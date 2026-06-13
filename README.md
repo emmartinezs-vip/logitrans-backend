@@ -124,6 +124,14 @@ Crear archivo:
 
 Ejemplo:
 
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ms_rutas_db
+DB_USERNAME=root
+DB_PASSWORD=
+
+
 ```env
 DB_HOST=127.0.0.1
 DB_PORT=3306
