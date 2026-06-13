@@ -7,130 +7,89 @@ use Dotenv\Dotenv;
 use Logitrans\MsRutas\Config\Database;
 use Logitrans\MsRutas\Controllers\RutaController;
 use Logitrans\MsRutas\Controllers\ProgramacionViajeController;
+use Logitrans\MsRutas\Middleware\AuthMiddleware;
 
-// Cargar variables de entorno
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
 
-// Conectar base de datos
 Database::connect();
 
-// Crear aplicación
 $app = AppFactory::create();
 
-$app->options('/{routes:.+}', function (
-    $request,
-    $response
-) {
-    return $response;
-});
+/*
+|--------------------------------------------------------------------------
+| Manejo de CORS
+|--------------------------------------------------------------------------
+*/
 
 $app->add(function ($request, $handler) {
+    if ($request->getMethod() === 'OPTIONS') {
+        $response = new \Slim\Psr7\Response();
+        return $response
+            ->withHeader('Access-Control-Allow-Origin', '*')
+            ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+            ->withStatus(200);
+    }
 
     $response = $handler->handle($request);
-
     return $response
-        ->withHeader(
-            'Access-Control-Allow-Origin',
-            '*'
-        )
-        ->withHeader(
-            'Access-Control-Allow-Headers',
-            'Content-Type, Authorization'
-        )
-        ->withHeader(
-            'Access-Control-Allow-Methods',
-            'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-        );
+        ->withHeader('Access-Control-Allow-Origin', '*')
+        ->withHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Ruta de prueba
+|--------------------------------------------------------------------------
+*/
+
+$app->get('/', function ($request, $response) {
+    $response->getBody()->write(
+        json_encode(['mensaje' => 'Microservicio Rutas funcionando'])
+    );
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Rutas protegidas — Rutas
+| IMPORTANTE: rutas específicas ANTES que las paramétricas /{id}
+|--------------------------------------------------------------------------
+*/
 
 $rutaController = new RutaController();
-
 $programacionController = new ProgramacionViajeController();
+$auth = new AuthMiddleware();
 
-// Ruta de prueba
-$app->get('/', function ($request, $response) {
+$app->get('/rutas', [$rutaController, 'listar'])->add($auth);
+$app->post('/rutas', [$rutaController, 'crear'])->add($auth);
+$app->get('/rutas/ciudad/{ciudad}', [$rutaController, 'buscarPorCiudad'])->add($auth);
+$app->get('/rutas/tiempo/{id}', [$rutaController, 'tiempoEstimado'])->add($auth);
+$app->put('/rutas/{id}', [$rutaController, 'actualizar'])->add($auth);
+$app->get('/rutas/{id}', [$rutaController, 'buscarPorId'])->add($auth);
 
-    $response->getBody()->write(
-        json_encode([
-            'mensaje' => 'Microservicio Rutas funcionando'
-        ])
-    );
+/*
+|--------------------------------------------------------------------------
+| Rutas protegidas — Programaciones
+| IMPORTANTE: rutas específicas ANTES que las paramétricas /{id}
+|--------------------------------------------------------------------------
+*/
 
-    return $response->withHeader(
-        'Content-Type',
-        'application/json'
-    );
-});
+$app->get('/programaciones', [$programacionController, 'listar'])->add($auth);
+$app->post('/programaciones', [$programacionController, 'crear'])->add($auth);
+$app->get('/programaciones/conductor/{id}', [$programacionController, 'buscarPorConductor'])->add($auth);
+$app->get('/programaciones/vehiculo/{id}', [$programacionController, 'buscarPorVehiculo'])->add($auth);
+$app->get('/programaciones/estado/{estado}', [$programacionController, 'buscarPorEstado'])->add($auth);
+$app->get('/programaciones/fecha/{fecha}', [$programacionController, 'buscarPorFecha'])->add($auth);
+$app->put('/programaciones/{id}', [$programacionController, 'actualizar'])->add($auth);
+$app->get('/programaciones/{id}', [$programacionController, 'buscarPorId'])->add($auth);
 
-$app->get(
-    '/rutas',
-    [$rutaController, 'listar']
-);
-
-$app->post(
-    '/rutas',
-    [$rutaController, 'crear']
-);
-
-$app->get(
-    '/rutas/{id}',
-    [$rutaController, 'buscarPorId']
-);
-
-$app->put(
-    '/rutas/{id}',
-    [$rutaController, 'actualizar']
-);
-
-$app->get(
-    '/rutas/ciudad/{ciudad}',
-    [$rutaController, 'buscarPorCiudad']
-);
-
-$app->get(
-    '/rutas/tiempo/{id}',
-    [$rutaController, 'tiempoEstimado']
-);
-
-$app->get(
-    '/programaciones',
-    [$programacionController, 'listar']
-);
-
-$app->post(
-    '/programaciones',
-    [$programacionController, 'crear']
-);
-
-$app->get(
-    '/programaciones/{id}',
-    [$programacionController, 'buscarPorId']
-);
-
-$app->get(
-    '/programaciones/conductor/{id}',
-    [$programacionController, 'buscarPorConductor']
-);
-
-$app->get(
-    '/programaciones/vehiculo/{id}',
-    [$programacionController, 'buscarPorVehiculo']
-);
-
-$app->get(
-    '/programaciones/estado/{estado}',
-    [$programacionController, 'buscarPorEstado']
-);
-
-$app->get(
-    '/programaciones/fecha/{fecha}',
-    [$programacionController, 'buscarPorFecha']
-);
-
-$app->put(
-    '/programaciones/{id}',
-    [$programacionController, 'actualizar']
-);
+/*
+|--------------------------------------------------------------------------
+| Ejecutar aplicación
+|--------------------------------------------------------------------------
+*/
 
 $app->run();

@@ -282,24 +282,17 @@ public function buscarPorFecha($request, $response, $args)
 
 public function actualizar($request, $response, $args)
 {
-    $programacion = ProgramacionViaje::find(
-        $args['id']
-    );
+    $programacion = ProgramacionViaje::find($args['id']);
 
     if (!$programacion) {
-
         $response->getBody()->write(
             json_encode([
                 'success' => false,
                 'mensaje' => 'Programación no encontrada'
             ])
         );
-
         return $response
-            ->withHeader(
-                'Content-Type',
-                'application/json'
-            )
+            ->withHeader('Content-Type', 'application/json')
             ->withStatus(404);
     }
 
@@ -308,42 +301,85 @@ public function actualizar($request, $response, $args)
         true
     );
 
-    $estadosPermitidos = [
-        'programado',
-        'en_transito',
-        'retrasado',
-        'finalizado',
-        'cancelado'
-    ];
+    // Validar conductor
+    $conductor = $this->consumirApi(
+        'http://localhost:8001/conductores/' . $data['conductor_id']
+    );
 
-    if (
-        !in_array(
-            $data['estado'],
-            $estadosPermitidos
-        )
-    ) {
-
+    if (isset($conductor['estado']) && $conductor['estado'] === 'inactivo') {
         $response->getBody()->write(
             json_encode([
                 'success' => false,
-                'mensaje' => 'Estado no válido'
+                'mensaje' => 'El conductor está inactivo'
             ])
         );
-
         return $response
-            ->withHeader(
-                'Content-Type',
-                'application/json'
-            )
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(400);
+    }
+
+    // Validar vehículo
+    $vehiculo = $this->consumirApi(
+        'http://localhost:8002/vehiculos/' . $data['vehiculo_id']
+    );
+
+    if (isset($vehiculo['estado']) && $vehiculo['estado'] === 'mantenimiento') {
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'El vehículo está en mantenimiento'
+            ])
+        );
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(400);
+    }
+
+    // Validar disponibilidad conductor (excluye la programación actual)
+    $conductorOcupado = ProgramacionViaje::where('conductor_id', $data['conductor_id'])
+        ->where('id', '!=', $args['id'])
+        ->whereIn('estado', ['programado', 'en_transito', 'retrasado'])
+        ->exists();
+
+    if ($conductorOcupado) {
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'El conductor ya tiene un viaje asignado'
+            ])
+        );
+        return $response
+            ->withHeader('Content-Type', 'application/json')
+            ->withStatus(400);
+    }
+
+    // Validar disponibilidad vehículo (excluye la programación actual)
+    $vehiculoOcupado = ProgramacionViaje::where('vehiculo_id', $data['vehiculo_id'])
+        ->where('id', '!=', $args['id'])
+        ->whereIn('estado', ['programado', 'en_transito', 'retrasado'])
+        ->exists();
+
+    if ($vehiculoOcupado) {
+        $response->getBody()->write(
+            json_encode([
+                'success' => false,
+                'mensaje' => 'El vehículo ya tiene un viaje asignado'
+            ])
+        );
+        return $response
+            ->withHeader('Content-Type', 'application/json')
             ->withStatus(400);
     }
 
     $programacion->update([
-        'fecha_salida' => $data['fecha_salida'],
-        'hora_salida' => $data['hora_salida'],
+        'conductor_id'           => $data['conductor_id'],
+        'vehiculo_id'            => $data['vehiculo_id'],
+        'ruta_id'                => $data['ruta_id'],
+        'fecha_salida'           => $data['fecha_salida'],
+        'hora_salida'            => $data['hora_salida'],
         'fecha_estimada_llegada' => $data['fecha_estimada_llegada'],
-        'observaciones' => $data['observaciones'],
-        'estado' => $data['estado']
+        'observaciones'          => $data['observaciones'] ?? null,
+        'estado'                 => $data['estado'] ?? $programacion->estado
     ]);
 
     $response->getBody()->write(
@@ -353,10 +389,7 @@ public function actualizar($request, $response, $args)
         ])
     );
 
-    return $response->withHeader(
-        'Content-Type',
-        'application/json'
-    );
+    return $response->withHeader('Content-Type', 'application/json');
 }
 
 }
